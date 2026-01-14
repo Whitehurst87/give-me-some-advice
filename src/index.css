@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f0f0f0] text-black font-mono;
+  }
+}
+
+@layer components {
+  .brutal-card {
+    @apply border-4 border-black shadow-brutal bg-white p-6 transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-brutal-lg;
+  }
+  
+  .brutal-btn {
+    @apply border-4 border-black shadow-brutal px-6 py-2 font-bold transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+  }
+
+  .brutal-input {
+    @apply border-4 border-black p-4 w-full text-xl focus:outline-none focus:ring-0 bg-white;
+  }
+}
