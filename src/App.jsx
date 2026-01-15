@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import wizardVideo from './assets/video/Wizard.mp4'
+import noMoreQuestionsVideo from './assets/video/No More Questions.mp4'
 
 const TOP_ADVICE = [
   {
@@ -31,8 +33,12 @@ const SARCASTIC_RESPONSES = [
   "Have you tried turning your life off and on again?",
   "That sounds like a 'you' problem, honestly.",
   "I'd help, but I'm busy being a line of code.",
+  "Have you considered just... not having that problem? It's working great for me.",
   "Maybe try asking someone who actually cares?",
+  "I ran a simulation of your plan. In 99% of outcomes, it ends in a facepalm.",
+  
   "The stars say: 'No.' Just... no.",
+  "I'd give you my two cents, but clearly, you're already bankrupt in the ideas department.",
   "I've analyzed your problem. My conclusion: Yikes."
 ]
 
@@ -40,9 +46,38 @@ function App() {
   const [question, setQuestion] = useState('')
   const [advice, setAdvice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [videoEnded, setVideoEnded] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [submissionCount, setSubmissionCount] = useState(0)
+  const [showFinalVideo, setShowFinalVideo] = useState(false)
+  const [finalVideoPlaying, setFinalVideoPlaying] = useState(false)
+  const videoRef = useRef(null)
+  const finalVideoRef = useRef(null)
+
+  const handleVideoClick = () => {
+    if (videoRef.current) {
+      videoRef.current.play()
+      setIsPlaying(true)
+    }
+  }
+
+  const handleFinalVideoClick = () => {
+    if (finalVideoRef.current) {
+      finalVideoRef.current.play()
+      setFinalVideoPlaying(true)
+    }
+  }
 
   const getAdvice = () => {
     if (!question.trim()) return
+    
+    // Check if this is the 3rd submission (count is currently 2)
+    if (submissionCount === 2) {
+      // Trigger final video immediately, no advice
+      setShowFinalVideo(true)
+      setQuestion('')
+      return
+    }
     
     setLoading(true)
     setAdvice('')
@@ -52,8 +87,18 @@ function App() {
       const randomAdvice = SARCASTIC_RESPONSES[Math.floor(Math.random() * SARCASTIC_RESPONSES.length)]
       setAdvice(randomAdvice)
       setLoading(false)
+      setSubmissionCount(prev => prev + 1)
+      setQuestion('')
     }, 2000)
   }
+
+  // Auto-play final video when it's shown
+  useEffect(() => {
+    if (showFinalVideo && finalVideoRef.current) {
+      finalVideoRef.current.play()
+      setFinalVideoPlaying(true)
+    }
+  }, [showFinalVideo])
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto">
@@ -72,28 +117,105 @@ function App() {
 
       {/* Hero Section */}
       <section className="mb-16">
-        <div className="brutal-card bg-orange-400 mb-8">
-          <h2 className="text-2xl font-bold mb-4 uppercase">What's your problem now?</h2>
-          <div className="flex flex-col md:flex-row gap-4">
-            <input 
-              type="text" 
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Type your pathetic struggle here..."
-              className="brutal-input"
-            />
-            <button 
-              onClick={getAdvice}
-              disabled={loading || !question.trim()}
-              className="brutal-btn bg-black text-white hover:bg-gray-800 disabled:bg-gray-400"
+        {showFinalVideo ? (
+          /* Final "No More Questions" Video */
+          <div className="brutal-card bg-black p-0 overflow-hidden animate-in fade-in duration-500 cursor-pointer relative">
+            <video 
+              ref={finalVideoRef}
+              className="w-full h-auto"
+              playsInline
+              autoPlay
+              onClick={handleFinalVideoClick}
+              onPause={() => setFinalVideoPlaying(false)}
+              onPlay={() => setFinalVideoPlaying(true)}
+              src={noMoreQuestionsVideo}
             >
-              {loading ? 'Judging you...' : 'Get Advice'}
-            </button>
+              Your browser does not support the video tag.
+            </video>
+            
+            {/* Play Button Overlay */}
+            {!finalVideoPlaying && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 transition-opacity hover:bg-opacity-40"
+                onClick={handleFinalVideoClick}
+              >
+                <svg
+                  width="100px"
+                  height="100px"
+                  viewBox="0 0 64 64"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="drop-shadow-lg transition-transform hover:scale-110"
+                  aria-hidden="true"
+                  role="img"
+                >
+                  <circle cx={32} cy={32} r={30} fill="#4fd1d9" />
+                  <path fill="#ffffff" d="M25 12l20 20l-20 20z" />
+                </svg>
+              </div>
+            )}
           </div>
-        </div>
+        ) : !videoEnded ? (
+          /* Initial Wizard Video Player */
+          <div className="brutal-card bg-black p-0 overflow-hidden animate-in fade-in duration-500 cursor-pointer relative">
+            <video 
+              ref={videoRef}
+              className="w-full h-auto"
+              playsInline
+              onClick={handleVideoClick}
+              onEnded={() => setVideoEnded(true)}
+              onPause={() => setIsPlaying(false)}
+              onPlay={() => setIsPlaying(true)}
+              src={wizardVideo}
+            >
+              Your browser does not support the video tag.
+            </video>
+            
+            {/* Play Button Overlay */}
+            {!isPlaying && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 transition-opacity hover:bg-opacity-40"
+                onClick={handleVideoClick}
+              >
+                <svg
+                  width="100px"
+                  height="100px"
+                  viewBox="0 0 64 64"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="drop-shadow-lg transition-transform hover:scale-110"
+                  aria-hidden="true"
+                  role="img"
+                >
+                  <circle cx={32} cy={32} r={30} fill="#4fd1d9" />
+                  <path fill="#ffffff" d="M25 12l20 20l-20 20z" />
+                </svg>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Question Form */
+          <div className="brutal-card bg-orange-400 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+            <h2 className="text-2xl font-bold mb-4 uppercase">What's your problem now?</h2>
+            <div className="flex flex-col md:flex-row gap-4">
+              <input 
+                type="text" 
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Type your pathetic struggle here..."
+                className="brutal-input"
+              />
+              <button 
+                onClick={getAdvice}
+                disabled={loading || !question.trim()}
+                className="brutal-btn bg-black text-white hover:bg-gray-800 disabled:bg-gray-400"
+              >
+                {loading ? 'Judging you...' : 'Get Advice'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Response Area */}
-        {(loading || advice) && (
+        {!showFinalVideo && (loading || advice) && (
           <div className={`brutal-card ${loading ? 'bg-gray-200' : 'bg-white'} border-dashed animate-in fade-in slide-in-from-top-4 duration-500`}>
             {loading ? (
               <p className="text-2xl font-bold italic">Analyzing your poor life choices...</p>
